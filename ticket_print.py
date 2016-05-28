@@ -14,57 +14,57 @@ class TicketPrint(object):
         # 从GoodInformation.json文件中读取商品信息
         with open('good_information.json', 'r') as f:
             self._goodInformation = json.load(f)
-        self._subCategory = set()
+        self._sub_category = set()
         self._wholesale = 10
         self._discount = 0.95
 
     # 超市添加新的商品
-    def addGood(self, good_informaion):
+    def add_good(self, good_informaion):
         pass
 
     # 修改批发最低数量
-    def updateWholesale(self, wholesale):
-        pass
+    def update_wholesale(self, wholesale):
+        self._wholesale = wholesale
 
     # 修改折扣额度
-    def updateDiscount(self, discount):
-        pass
+    def update_discount(self, discount):
+        self._discount = discount
 
     # 添加新的打折子类
     def addSubCategory(self, sub_category):
-        self._subCategory.add(sub_category)
+        self._sub_category.add(sub_category)
 
     # 当某些子类不打折时，进行删除操作
-    def delSubCategory(self, sub_category):
+    def del_sub_category(self, sub_category):
         try:
-            self._subCategory.remove(sub_category)
+            self._sub_category.remove(sub_category)
             print('add subCategory successfully!\n')
         except KeyError as e:
             print('ValueError:', e)
 
     # 在小票上增加物品信息, 参数为别代表商品信息字典，当前小票列表，商品数量, 当前已有商品名
-    def addItem(self, goodDict, receipt, num, boughtName):
-        name = goodDict['name']
-        subCategoryNum = 0
+    def add_item(self, good_dict, receipt, num, bought_name):
+        name = good_dict['name']
+        sub_category_num = 0
         # 如果该商品与之前扫描产品相同，更改产品数量
-        if name in boughtName:
+        if name in bought_name:
             for item in receipt:
                 if item['name'] == name:
                     item['num'] += num
-                    if item['subCategory'] in self._subCategory:
-                        subCategoryNum = num
+                    if item['subCategory'] in self._sub_category:
+                        sub_category_num = num
                     break
         else:
-            boughtName.add(name)
-            price = goodDict['price']
-            subCategory = goodDict['subCategory']
-            unit = goodDict['unit']
+            bought_name.add(name)
+            price = good_dict['price']
+            sub_category = good_dict['subCategory']
+            unit = good_dict['unit']
             tmp = {'name': name, 'price': price,
-                   'subCategory': subCategory, 'num': num, 'unit': unit}
+                   'subCategory': sub_category, 'num': num, 'unit': unit}
             receipt.append(tmp)
-            if subCategory in self._subCategory:
-                subCategoryNum = num
-        return subCategoryNum
+            if sub_category in self._sub_category:
+                sub_category_num = num
+        return sub_category_num
 
     # 根据条形码将商品信息加入到小票中
     def compute(self, json_data):
@@ -79,11 +79,11 @@ class TicketPrint(object):
                 # 条码分为两类，1类是不带-，1类是带-，后面接数量的
                 # 对于前一类，直接记录商品参数即可
                 if item == good['barcode']:
-                    subCategoryNum += self.addItem(good, receipt, 1, name)
+                    subCategoryNum += self.add_item(good, receipt, 1, name)
                 # 对于条形码中带有数量的，取其条形码后面的数字作为参数传入
                 elif good['barcode'] in item:
                     subCategoryNum += \
-                        self.addItem(good, receipt,
+                        self.add_item(good, receipt,
                                      float(item[len(good['barcode']) + 1]), name)
         # 打印小票
         return self._print_receipt(receipt, subCategoryNum)
@@ -98,7 +98,7 @@ class TicketPrint(object):
             content += '名称：' + item['name'] + ',' + \
                        '数量：' + str(item['num']) + item['unit'] + ',' + \
                        '单价：' + '%.2f' % item['price'] + '(元）' + ','
-            if sub_category_num >= self._wholesale and item['subCategory'] in self._subCategory:
+            if sub_category_num >= self._wholesale and item['subCategory'] in self._sub_category:
                 tmp = round(item['price'] * item['num'] * self._discount, 2)
                 content += '小计：' + '%.2f' % tmp + ',' + '(元)' + ','
                 amount += tmp
